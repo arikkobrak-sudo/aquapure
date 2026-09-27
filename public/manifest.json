@@ -1,0 +1,18 @@
+{
+  "name": "AquaPure • Трекер Води",
+  "short_name": "AquaPure",
+  "description": "Естетичний та затишний трекер води з живою фізикою рідини",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a1120",
+  "theme_color": "#0a1120",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
