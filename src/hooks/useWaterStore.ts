@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { WaterLog, DayRecord, UserSettings } from '../types';
-
 import { sound } from '../utils/sound';
+import { supabase } from '../utils/supabase';
 
 const STORAGE_KEYS = {
   SETTINGS: 'aquapure_settings_v1',
@@ -13,7 +13,8 @@ const DEFAULT_SETTINGS: UserSettings = {
   dailyGoal: 2000,
   soundEnabled: true,
   themeId: 'aqua',
-  customLoveNote: 'Ти робиш цей світ красивішим і теплішим щодня. Не забувай пити водичку і берегти себе, моє сонечко! Люблю тебе до місяця і назад ❤️',
+  customLoveNote:
+    'Ти робиш цей світ красивішим і теплішим щодня. Не забувай пити водичку і берегти себе, моє сонечко! Люблю тебе до місяця і назад ❤️',
 };
 
 const getTodayDateString = (): string => {
@@ -41,7 +42,7 @@ export const useWaterStore = () => {
     try {
       localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
     } catch {
-      // storage quota or disabled
+      // ignore
     }
   }, [settings]);
 
@@ -56,6 +57,7 @@ export const useWaterStore = () => {
   });
 
   const [currentDateKey, setCurrentDateKey] = useState<string>(getTodayDateString);
+  const [isCloudConnected, setIsCloudConnected] = useState<boolean>(true);
 
   // Keep date synced when phone wakes up or passes midnight
   useEffect(() => {
@@ -78,21 +80,6 @@ export const useWaterStore = () => {
     };
   }, []);
 
-  // Current day record
-  const currentDayRecord: DayRecord = history[currentDateKey] || {
-    date: currentDateKey,
-    total: 0,
-    goal: settings.dailyGoal,
-    logs: [],
-  };
-
-
-  // Tracking last added for Undo
-  const [lastAddedLog, setLastAddedLog] = useState<WaterLog | null>(null);
-
-  // Celebration trigger: '50' or '100' or null
-  const [celebration, setCelebration] = useState<'50' | '100' | null>(null);
-
   // Save history to localStorage
   const saveHistory = useCallback((newHistory: Record<string, DayRecord>) => {
     setHistory(newHistory);
@@ -103,56 +90,211 @@ export const useWaterStore = () => {
     }
   }, []);
 
-  // Add water
-  const addWater = useCallback((amount: number) => {
-    if (amount <= 0) return;
+  // Fetch all data from Supabase and sync
+  const fetchCloudData = useCallback(async () => {
+    try {
+      // 1. Fetch remote settings
+      const { data: remoteSettings, error: setErr } = await supabase
+        .from('water_tracker_settings')
+        .select('*')
+        .eq('id', 'main')
+        .maybeSingle();
 
-    sound.playPour();
+      if (!setErr && remoteSettings) {
+        setSettings((prev) => {
+          const updated: UserSettings = {
+            ...prev,
+            userName: remoteSettings.user_name || prev.userName,
+            dailyGoal: remoteSettings.daily_goal || prev.dailyGoal,
+            themeId: remoteSettings.theme_id || prev.themeId,
+            customLoveNote:
+              remoteSettings.custom_love_note || prev.customLoveNote,
+          };
+          try {
+            localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(updated));
+          } catch {}
+          return updated;
+        });
+      }
 
-    const nowKey = getTodayDateString();
-    const existing = history[nowKey] || {
-      date: nowKey,
-      total: 0,
-      goal: settings.dailyGoal,
-      logs: [],
-    };
+      // 2. Fetch remote logs
+      const { data: remoteLogs, error: logErr } = await supabase
+        .from('water_tracker_logs')
+        .select('*')
+        .order('timestamp', { ascending: false });
 
-    const previousTotal = existing.total;
-    const newTotal = previousTotal + amount;
-    const goal = settings.dailyGoal;
+      if (!logErr && remoteLogs) {
+        setIsCloudConnected(true);
+        const newHistoryMap: Record<string, DayRecord> = {};
 
-    const newLog: WaterLog = {
-      id: 'log_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-      amount,
-      timestamp: Date.now(),
-    };
+        remoteLogs.forEach((row) => {
+          const logDate: string = row.date;
+          if (!newHistoryMap[logDate]) {
+            newHistoryMap[logDate] = {
+              date: logDate,
+              total: 0,
+              goal: remoteSettings?.daily_goal || settings.dailyGoal,
+              logs: [],
+            };
+          }
+          newHistoryMap[logDate].logs.push({
+            id: row.id,
+            amount: Number(row.amount),
+            timestamp: Number(row.timestamp),
+          });
+          newHistoryMap[logDate].total += Number(row.amount);
+        });
 
-    const updatedDay: DayRecord = {
-      ...existing,
-      goal,
-      total: newTotal,
-      logs: [newLog, ...existing.logs],
-    };
+        // Ensure current day exists
+        const todayK = getTodayDateString();
+        if (!newHistoryMap[todayK]) {
+          newHistoryMap[todayK] = {
+            date: todayK,
+            total: 0,
+            goal: remoteSettings?.daily_goal || settings.dailyGoal,
+            logs: [],
+          };
+        }
 
-    const updatedHistory = {
-      ...history,
-      [nowKey]: updatedDay,
-    };
-
-    saveHistory(updatedHistory);
-    setLastAddedLog(newLog);
-
-    // Trigger celebration milestones cleanly
-    if (previousTotal < goal * 0.5 && newTotal >= goal * 0.5 && newTotal < goal) {
-      setTimeout(() => setCelebration('50'), 350);
-    } else if (previousTotal < goal && newTotal >= goal) {
-      setTimeout(() => {
-        sound.playCrystalChime();
-        setCelebration('100');
-      }, 350);
+        saveHistory(newHistoryMap);
+      }
+    } catch {
+      setIsCloudConnected(false);
     }
-  }, [history, settings.dailyGoal, saveHistory]);
+  }, [saveHistory, settings.dailyGoal]);
 
+  // Realtime Supabase Subscription
+  useEffect(() => {
+    fetchCloudData();
+
+    const channel = supabase
+      .channel('shared_water_tracker')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'water_tracker_logs' },
+        () => {
+          fetchCloudData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'water_tracker_settings' },
+        (payload) => {
+          const newRow = payload.new as {
+            user_name?: string;
+            daily_goal?: number;
+            theme_id?: string;
+            custom_love_note?: string;
+          };
+          if (newRow) {
+            setSettings((prev) => {
+              const updated = {
+                ...prev,
+                userName: newRow.user_name || prev.userName,
+                dailyGoal: newRow.daily_goal || prev.dailyGoal,
+                themeId: newRow.theme_id || prev.themeId,
+                customLoveNote:
+                  newRow.custom_love_note || prev.customLoveNote,
+              };
+              try {
+                localStorage.setItem(
+                  STORAGE_KEYS.SETTINGS,
+                  JSON.stringify(updated)
+                );
+              } catch {}
+              return updated;
+            });
+          }
+        }
+      )
+      .subscribe((status) => {
+        setIsCloudConnected(status === 'SUBSCRIBED');
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchCloudData]);
+
+  // Current day record
+  const currentDayRecord: DayRecord = history[currentDateKey] || {
+    date: currentDateKey,
+    total: 0,
+    goal: settings.dailyGoal,
+    logs: [],
+  };
+
+  // Tracking last added for Undo
+  const [lastAddedLog, setLastAddedLog] = useState<WaterLog | null>(null);
+
+  // Celebration trigger: '50' or '100' or null
+  const [celebration, setCelebration] = useState<'50' | '100' | null>(null);
+
+  // Add water with instant optimistic local update + Supabase sync
+  const addWater = useCallback(
+    (amount: number) => {
+      if (amount <= 0) return;
+
+      sound.playPour();
+
+      const nowKey = getTodayDateString();
+      const existing = history[nowKey] || {
+        date: nowKey,
+        total: 0,
+        goal: settings.dailyGoal,
+        logs: [],
+      };
+
+      const previousTotal = existing.total;
+      const newTotal = previousTotal + amount;
+      const goal = settings.dailyGoal;
+
+      const newLog: WaterLog = {
+        id: 'log_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+        amount,
+        timestamp: Date.now(),
+      };
+
+      const updatedDay: DayRecord = {
+        ...existing,
+        goal,
+        total: newTotal,
+        logs: [newLog, ...existing.logs],
+      };
+
+      const updatedHistory = {
+        ...history,
+        [nowKey]: updatedDay,
+      };
+
+      saveHistory(updatedHistory);
+      setLastAddedLog(newLog);
+
+      // Async push to Supabase shared cloud table
+      supabase
+        .from('water_tracker_logs')
+        .insert({
+          id: newLog.id,
+          amount: newLog.amount,
+          timestamp: newLog.timestamp,
+          date: nowKey,
+        })
+        .then(({ error }) => {
+          if (error) console.warn('Supabase insert error:', error);
+        });
+
+      // Trigger celebration milestones cleanly
+      if (previousTotal < goal * 0.5 && newTotal >= goal * 0.5 && newTotal < goal) {
+        setTimeout(() => setCelebration('50'), 350);
+      } else if (previousTotal < goal && newTotal >= goal) {
+        setTimeout(() => {
+          sound.playCrystalChime();
+          setCelebration('100');
+        }, 350);
+      }
+    },
+    [history, settings.dailyGoal, saveHistory]
+  );
 
   // Undo last logged portion
   const undoLast = useCallback(() => {
@@ -162,39 +304,43 @@ export const useWaterStore = () => {
     sound.playBubble(0.7);
 
     const nowKey = getTodayDateString();
-    setHistory((prev) => {
-      const existing = prev[nowKey];
-      if (!existing) return prev;
+    const existing = history[nowKey];
+    if (!existing) return;
 
-      const updatedLogs = existing.logs.filter((l) => l.id !== logToRemove.id);
-      const updatedTotal = Math.max(0, existing.total - logToRemove.amount);
+    const updatedLogs = existing.logs.filter((l) => l.id !== logToRemove.id);
+    const updatedTotal = Math.max(0, existing.total - logToRemove.amount);
 
-      const updatedDay: DayRecord = {
-        ...existing,
-        total: updatedTotal,
-        logs: updatedLogs,
-      };
+    const updatedDay: DayRecord = {
+      ...existing,
+      total: updatedTotal,
+      logs: updatedLogs,
+    };
 
-      const updatedHistory = {
-        ...prev,
-        [nowKey]: updatedDay,
-      };
+    const updatedHistory = {
+      ...history,
+      [nowKey]: updatedDay,
+    };
 
-      saveHistory(updatedHistory);
-      return updatedHistory;
-    });
-  }, [lastAddedLog, saveHistory]);
+    saveHistory(updatedHistory);
+
+    // Delete from Supabase
+    supabase
+      .from('water_tracker_logs')
+      .delete()
+      .eq('id', logToRemove.id)
+      .then(() => {});
+  }, [lastAddedLog, history, saveHistory]);
 
   // Delete specific log
-  const deleteLog = useCallback((logId: string) => {
-    const nowKey = getTodayDateString();
-    sound.playBubble(0.65);
-    setHistory((prev) => {
-      const existing = prev[nowKey];
-      if (!existing) return prev;
+  const deleteLog = useCallback(
+    (logId: string) => {
+      const nowKey = getTodayDateString();
+      sound.playBubble(0.65);
+      const existing = history[nowKey];
+      if (!existing) return;
 
       const logItem = existing.logs.find((l) => l.id === logId);
-      if (!logItem) return prev;
+      if (!logItem) return;
 
       const updatedLogs = existing.logs.filter((l) => l.id !== logId);
       const updatedTotal = Math.max(0, existing.total - logItem.amount);
@@ -206,19 +352,43 @@ export const useWaterStore = () => {
       };
 
       const updatedHistory = {
-        ...prev,
+        ...history,
         [nowKey]: updatedDay,
       };
 
       saveHistory(updatedHistory);
-      return updatedHistory;
-    });
-  }, [saveHistory]);
 
-  // Update settings
+      // Delete from Supabase
+      supabase
+        .from('water_tracker_logs')
+        .delete()
+        .eq('id', logId)
+        .then(() => {});
+    },
+    [history, saveHistory]
+  );
+
+  // Update settings with Supabase sync
   const updateSettings = useCallback((newPartial: Partial<UserSettings>) => {
     setSettings((prev) => {
       const updated = { ...prev, ...newPartial };
+      try {
+        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(updated));
+      } catch {}
+
+      // Sync settings to Supabase
+      supabase
+        .from('water_tracker_settings')
+        .upsert({
+          id: 'main',
+          user_name: updated.userName,
+          daily_goal: updated.dailyGoal,
+          theme_id: updated.themeId,
+          custom_love_note: updated.customLoveNote,
+          updated_at: new Date().toISOString(),
+        })
+        .then(() => {});
+
       return updated;
     });
   }, []);
@@ -260,6 +430,7 @@ export const useWaterStore = () => {
     todayRecord: currentDayRecord,
     lastAddedLog,
     celebration,
+    isCloudConnected,
     setCelebration,
     addWater,
     undoLast,

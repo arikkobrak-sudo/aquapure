@@ -52,12 +52,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-cyan-500/15 text-cyan-400 border border-cyan-500/20">
               <Sparkles size={16} />
             </div>
-            <h3 className="text-base font-bold text-white">Налаштування</h3>
+            <div>
+              <h3 className="text-base font-bold text-white leading-tight">Налаштування</h3>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[10px] text-emerald-300/90 font-medium">Спільна база онлайн</span>
+              </div>
+            </div>
           </div>
           <button
             onClick={onClose}
             className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
           >
+
             <X size={18} />
           </button>
         </div>
