@@ -55,15 +55,37 @@ export const useWaterStore = () => {
     }
   });
 
-  const todayKey = getTodayDateString();
+  const [currentDateKey, setCurrentDateKey] = useState<string>(getTodayDateString);
+
+  // Keep date synced when phone wakes up or passes midnight
+  useEffect(() => {
+    const checkDate = () => {
+      const nowKey = getTodayDateString();
+      setCurrentDateKey((prev) => (prev !== nowKey ? nowKey : prev));
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        checkDate();
+      }
+    };
+
+    const timer = setInterval(checkDate, 30000);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
 
   // Current day record
-  const currentDayRecord: DayRecord = history[todayKey] || {
-    date: todayKey,
+  const currentDayRecord: DayRecord = history[currentDateKey] || {
+    date: currentDateKey,
     total: 0,
     goal: settings.dailyGoal,
     logs: [],
   };
+
 
   // Tracking last added for Undo
   const [lastAddedLog, setLastAddedLog] = useState<WaterLog | null>(null);

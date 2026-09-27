@@ -92,9 +92,11 @@ export const LiquidVessel: React.FC<LiquidVesselProps> = ({
     let animationFrameId: number;
     const width = 230;
     const height = 230;
-    canvas.width = width * 2; // Retina scale
-    canvas.height = height * 2;
-    ctx.scale(2, 2);
+    const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 2, 3) : 2;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.scale(dpr, dpr);
+
 
     let currentY = height - ratio * height * 0.88 - 12;
     let wavePhase = 0;

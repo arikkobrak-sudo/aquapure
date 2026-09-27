@@ -40,3 +40,14 @@ export const COMPLIMENTS: ComplimentCollection = {
 export const getRandomItem = <T>(arr: T[]): T => {
   return arr[Math.floor(Math.random() * arr.length)];
 };
+
+// Proper Ukrainian pluralization for numbers (1 порція, 2-4 порції, 5-20 порцій)
+export const getUkrainianPlural = (num: number, one: string, few: string, many: string): string => {
+  const abs = Math.abs(num) % 100;
+  const last = abs % 10;
+  if (abs > 10 && abs < 20) return many;
+  if (last > 1 && last < 5) return few;
+  if (last === 1) return one;
+  return many;
+};
+

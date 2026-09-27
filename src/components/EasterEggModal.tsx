@@ -79,8 +79,9 @@ export const EasterEggModal: React.FC<EasterEggModalProps> = ({
         </div>
 
         <h3 className="text-xl font-bold text-white mb-4">
-          Для моєї {userName}
+          Для тебе, {userName} ❤️
         </h3>
+
 
         {/* The boyfriend's note */}
         <div className="p-4 rounded-2xl bg-white/[0.04] border border-rose-500/20 text-sm text-rose-100/90 leading-relaxed font-normal italic shadow-inner mb-6">

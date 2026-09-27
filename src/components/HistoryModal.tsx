@@ -2,6 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { X, Trash2, Clock, Droplets } from 'lucide-react';
 import type { WaterLog } from '../types';
+import { getUkrainianPlural } from '../utils/compliments';
+
 
 
 interface HistoryModalProps {
@@ -38,8 +40,9 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
             <div>
               <h3 className="text-base font-bold text-white">Історія за сьогодні</h3>
               <p className="text-xs text-slate-400">
-                Загалом: {total} мл • {logs.length} {logs.length === 1 ? 'порція' : 'порцій'}
+                Загалом: {total} мл • {logs.length} {getUkrainianPlural(logs.length, 'порція', 'порції', 'порцій')}
               </p>
+
             </div>
           </div>
           <button
