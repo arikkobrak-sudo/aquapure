@@ -20,7 +20,7 @@ interface WeekStripProps {
 
 export const WeekStrip: React.FC<WeekStripProps> = ({ days, theme }) => {
   return (
-    <div className="w-full max-w-sm px-4 mt-6">
+    <div className="w-full max-w-sm px-4 mt-2.5">
       <div className="flex items-center justify-between mb-2 px-1">
         <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
           Останні 7 днів

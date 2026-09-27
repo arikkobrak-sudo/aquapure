@@ -57,29 +57,35 @@ export default function App() {
   const weekHistory = getWeekHistory();
 
   return (
-    <div className="relative min-h-[100dvh] w-full max-w-md mx-auto flex flex-col justify-between py-6 px-4 overflow-hidden">
+    <div
+      className="relative h-[100dvh] w-full max-w-md mx-auto flex flex-col justify-between px-4 overflow-hidden select-none"
+      style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 10px)',
+      }}
+    >
       {/* Dynamic Background Atmospheric Lighting */}
       <div
         className="fixed inset-0 pointer-events-none transition-colors duration-1000 -z-10"
         style={{
-          background: `radial-gradient(ellipse at 50% 20%, ${activeTheme.surfaceGlow} 0%, #070c17 75%)`,
+          background: `radial-gradient(ellipse at 50% 15%, ${activeTheme.surfaceGlow} 0%, #070c17 75%)`,
         }}
       />
 
-      {/* Top Header Bar */}
-      <header className="w-full flex items-center justify-between pt-1 pb-2 px-1">
+      {/* Top Header Bar with Safe-Area clearance */}
+      <header className="w-full flex items-center justify-between pb-1 px-1 z-30 select-none flex-shrink-0">
         {/* Date & Personalized Greeting */}
         <div className="flex flex-col text-left">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400">
-            <span>{capitalizedDate}</span>
-          </div>
-          <h1 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-1.5 mt-0.5 font-sans">
+          <span className="text-[11px] font-semibold text-slate-400 tracking-wide">
+            {capitalizedDate}
+          </span>
+          <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-white flex items-center gap-1.5 mt-0.5 font-sans">
             <span>Привіт, {settings.userName}</span>
-            <Sparkles size={16} className="text-amber-300 animate-pulse" />
+            <Sparkles size={16} className="text-amber-300 animate-pulse flex-shrink-0" />
           </h1>
         </div>
 
-        {/* Action Icons */}
+        {/* Action Buttons - large touch targets */}
         <div className="flex items-center gap-2">
           {/* Sound Toggle */}
           <button
@@ -87,12 +93,12 @@ export default function App() {
               updateSettings({ soundEnabled: !settings.soundEnabled })
             }
             title={settings.soundEnabled ? 'Вимкнути звук' : 'Увімкнути звук'}
-            className="w-9 h-9 rounded-xl glass-btn flex items-center justify-center text-slate-300 hover:text-white"
+            className="w-10 h-10 rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.2] border border-white/15 backdrop-blur-xl flex items-center justify-center text-slate-200 transition-all shadow-md active:scale-92"
           >
             {settings.soundEnabled ? (
-              <Volume2 size={16} className="text-cyan-400" />
+              <Volume2 size={17} className="text-cyan-400" />
             ) : (
-              <VolumeX size={16} className="text-slate-500" />
+              <VolumeX size={17} className="text-slate-500" />
             )}
           </button>
 
@@ -100,24 +106,24 @@ export default function App() {
           <button
             onClick={() => setShowHistory(true)}
             title="Історія за сьогодні"
-            className="w-9 h-9 rounded-xl glass-btn flex items-center justify-center text-slate-300 hover:text-white"
+            className="w-10 h-10 rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.2] border border-white/15 backdrop-blur-xl flex items-center justify-center text-slate-200 transition-all shadow-md active:scale-92"
           >
-            <History size={16} />
+            <History size={17} />
           </button>
 
           {/* Settings Button */}
           <button
             onClick={() => setShowSettings(true)}
             title="Налаштування"
-            className="w-9 h-9 rounded-xl glass-btn flex items-center justify-center text-slate-300 hover:text-white"
+            className="w-10 h-10 rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.2] border border-white/15 backdrop-blur-xl flex items-center justify-center text-slate-200 transition-all shadow-md active:scale-92"
           >
-            <Settings size={16} />
+            <Settings size={17} />
           </button>
         </div>
       </header>
 
       {/* Center Vessel (Living Liquid & Floating Companion) */}
-      <main className="flex-1 flex flex-col items-center justify-center py-2">
+      <main className="flex-1 flex flex-col items-center justify-center py-1 min-h-0 overflow-hidden">
         <LiquidVessel
           total={todayRecord.total}
           goal={settings.dailyGoal}
@@ -139,7 +145,7 @@ export default function App() {
       </main>
 
       {/* Subtle Bottom Romantic Footer Hint */}
-      <footer className="w-full text-center py-2">
+      <footer className="w-full text-center py-1 flex-shrink-0">
         <motion.button
           onClick={() => setShowEasterEgg(true)}
           whileHover={{ scale: 1.03 }}
