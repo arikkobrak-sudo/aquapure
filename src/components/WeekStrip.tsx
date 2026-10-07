@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
+import { motion } from 'framer-motion';
 import type { WaterTheme } from '../types';
 
 interface WeekDayItem {
@@ -15,18 +15,16 @@ interface WeekDayItem {
 interface WeekStripProps {
   days: WeekDayItem[];
   theme: WaterTheme;
+  selectedDateKey: string;
+  onSelectDate: (dateKey: string) => void;
 }
 
-export const WeekStrip: React.FC<WeekStripProps> = ({ days, theme }) => {
-  const [selectedDay, setSelectedDay] = useState<WeekDayItem | null>(null);
-
-  const handleDayClick = (d: WeekDayItem) => {
-    setSelectedDay(d);
-    setTimeout(() => {
-      setSelectedDay((curr) => (curr?.dateKey === d.dateKey ? null : curr));
-    }, 2800);
-  };
-
+export const WeekStrip: React.FC<WeekStripProps> = ({
+  days,
+  theme,
+  selectedDateKey,
+  onSelectDate,
+}) => {
   return (
     <div className="w-full max-w-sm px-4 mt-2.5 relative">
       <div className="flex items-center justify-between mb-1.5 px-1">
@@ -38,44 +36,43 @@ export const WeekStrip: React.FC<WeekStripProps> = ({ days, theme }) => {
         </span>
       </div>
 
-      {/* Floating detail tooltip on tap */}
-      <AnimatePresence>
-        {selectedDay && (
-          <motion.div
-            initial={{ opacity: 0, y: -6, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.95 }}
-            className="absolute -top-7 left-1/2 -translate-x-1/2 z-20 px-3 py-1 rounded-full bg-slate-900/95 border border-white/20 text-[11px] font-semibold text-cyan-200 shadow-xl backdrop-blur-md whitespace-nowrap"
-          >
-            {selectedDay.dayNum} число: {selectedDay.total.toLocaleString('uk-UA')} / {selectedDay.goal.toLocaleString('uk-UA')} мл ({selectedDay.percent}%)
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <div className="grid grid-cols-7 gap-1.5 p-1.5 rounded-2xl glass-card">
         {days.map((d) => {
           const isComplete = d.percent >= 100;
+          const isSelected = d.dateKey === selectedDateKey;
+
           return (
             <motion.div
               key={d.dateKey}
-              onClick={() => handleDayClick(d)}
+              onClick={() => onSelectDate(d.dateKey)}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.94 }}
               className={`flex flex-col items-center py-2 px-1 rounded-xl transition-all cursor-pointer relative ${
-                d.isToday
+                isSelected
+                  ? 'bg-white/15 border-2 shadow-inner'
+                  : d.isToday
                   ? 'bg-white/10 border border-white/20 shadow-inner'
-                  : 'bg-white/[0.02] hover:bg-white/[0.05]'
+                  : 'bg-white/[0.02] hover:bg-white/[0.05] border border-transparent'
               }`}
+              style={
+                isSelected
+                  ? { borderColor: theme.primary }
+                  : undefined
+              }
             >
               {/* Day of week */}
-              <span className="text-[10px] font-semibold text-slate-400 mb-0.5">
+              <span
+                className={`text-[10px] font-semibold mb-0.5 ${
+                  isSelected ? 'text-white' : 'text-slate-400'
+                }`}
+              >
                 {d.dayOfWeek}
               </span>
 
               {/* Day number */}
               <span
                 className={`text-xs font-bold mb-1.5 ${
-                  d.isToday ? 'text-white' : 'text-slate-300'
+                  isSelected || d.isToday ? 'text-white' : 'text-slate-300'
                 }`}
               >
                 {d.dayNum}
@@ -121,6 +118,14 @@ export const WeekStrip: React.FC<WeekStripProps> = ({ days, theme }) => {
               <span className="text-[9px] font-medium text-slate-400 mt-1">
                 {d.percent}%
               </span>
+
+              {/* Today dot indicator */}
+              {d.isToday && (
+                <div
+                  className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
+                  style={{ backgroundColor: theme.primary }}
+                />
+              )}
             </motion.div>
           );
         })}

@@ -4,14 +4,14 @@ import { X, Trash2, Clock, Droplets } from 'lucide-react';
 import type { WaterLog } from '../types';
 import { getUkrainianPlural } from '../utils/compliments';
 
-
-
 interface HistoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   logs: WaterLog[];
   onDeleteLog: (id: string) => void;
   total: number;
+  dateLabel?: string;
+  isToday?: boolean;
 }
 
 export const HistoryModal: React.FC<HistoryModalProps> = ({
@@ -20,8 +20,18 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
   logs,
   onDeleteLog,
   total,
+  dateLabel,
+  isToday = true,
 }) => {
   if (!isOpen) return null;
+
+  const title = isToday
+    ? 'Історія за сьогодні'
+    : `Історія — ${dateLabel || 'обраний день'}`;
+
+  const emptyMessage = isToday
+    ? 'Ще немає записів за сьогодні. Час випити першу склянку! 💧'
+    : 'Немає записів за цей день. Можеш додати воду зараз! 💧';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-md">
@@ -33,21 +43,20 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
       >
         {/* Header */}
         <div className="p-5 border-b border-white/10 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-cyan-500/15 text-cyan-400 border border-cyan-500/20">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-cyan-500/15 text-cyan-400 border border-cyan-500/20 flex-shrink-0">
               <Droplets size={18} />
             </div>
-            <div>
-              <h3 className="text-base font-bold text-white">Історія за сьогодні</h3>
+            <div className="min-w-0">
+              <h3 className="text-base font-bold text-white truncate">{title}</h3>
               <p className="text-xs text-slate-400">
                 Загалом: {total} мл • {logs.length} {getUkrainianPlural(logs.length, 'порція', 'порції', 'порцій')}
               </p>
-
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors flex-shrink-0"
           >
             <X size={18} />
           </button>
@@ -58,7 +67,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
           {logs.length === 0 ? (
             <div className="py-12 text-center text-slate-400 text-sm">
               <Droplets size={32} className="mx-auto mb-2 opacity-30 text-cyan-400" />
-              Ще немає записів за сьогодні. Час випити першу склянку! 💧
+              {emptyMessage}
             </div>
           ) : (
             logs.map((log) => {

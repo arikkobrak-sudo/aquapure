@@ -57,13 +57,30 @@ export const useWaterStore = () => {
   });
 
   const [currentDateKey, setCurrentDateKey] = useState<string>(getTodayDateString);
+  const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString);
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(true);
+
+  const isViewingToday = selectedDate === getTodayDateString();
+
+  // Navigate to a specific day
+  const selectDate = useCallback((dateKey: string) => {
+    setSelectedDate(dateKey);
+  }, []);
 
   // Keep date synced when phone wakes up or passes midnight
   useEffect(() => {
     const checkDate = () => {
       const nowKey = getTodayDateString();
-      setCurrentDateKey((prev) => (prev !== nowKey ? nowKey : prev));
+      setCurrentDateKey((prev) => {
+        if (prev !== nowKey) {
+          // Midnight rollover: if user was viewing "today", move them to the new today
+          setSelectedDate((prevSelected) =>
+            prevSelected === prev ? nowKey : prevSelected
+          );
+          return nowKey;
+        }
+        return prev;
+      });
     };
 
     const handleVisibility = () => {
@@ -216,9 +233,9 @@ export const useWaterStore = () => {
     };
   }, [fetchCloudData]);
 
-  // Current day record
-  const currentDayRecord: DayRecord = history[currentDateKey] || {
-    date: currentDateKey,
+  // Selected day record (could be today or a past day)
+  const selectedDayRecord: DayRecord = history[selectedDate] || {
+    date: selectedDate,
     total: 0,
     goal: settings.dailyGoal,
     logs: [],
@@ -230,16 +247,16 @@ export const useWaterStore = () => {
   // Celebration trigger: '50' or '100' or null
   const [celebration, setCelebration] = useState<'50' | '100' | null>(null);
 
-  // Add water with instant optimistic local update + Supabase sync
+  // Add water to the currently selected day
   const addWater = useCallback(
     (amount: number) => {
       if (amount <= 0) return;
 
       sound.playPour();
 
-      const nowKey = getTodayDateString();
-      const existing = history[nowKey] || {
-        date: nowKey,
+      const targetDate = selectedDate;
+      const existing = history[targetDate] || {
+        date: targetDate,
         total: 0,
         goal: settings.dailyGoal,
         logs: [],
@@ -264,7 +281,7 @@ export const useWaterStore = () => {
 
       const updatedHistory = {
         ...history,
-        [nowKey]: updatedDay,
+        [targetDate]: updatedDay,
       };
 
       saveHistory(updatedHistory);
@@ -277,23 +294,25 @@ export const useWaterStore = () => {
           id: newLog.id,
           amount: newLog.amount,
           timestamp: newLog.timestamp,
-          date: nowKey,
+          date: targetDate,
         })
         .then(({ error }) => {
           if (error) console.warn('Supabase insert error:', error);
         });
 
-      // Trigger celebration milestones cleanly
-      if (previousTotal < goal * 0.5 && newTotal >= goal * 0.5 && newTotal < goal) {
-        setTimeout(() => setCelebration('50'), 350);
-      } else if (previousTotal < goal && newTotal >= goal) {
-        setTimeout(() => {
-          sound.playCrystalChime();
-          setCelebration('100');
-        }, 350);
+      // Trigger celebration milestones ONLY for today
+      if (targetDate === getTodayDateString()) {
+        if (previousTotal < goal * 0.5 && newTotal >= goal * 0.5 && newTotal < goal) {
+          setTimeout(() => setCelebration('50'), 350);
+        } else if (previousTotal < goal && newTotal >= goal) {
+          setTimeout(() => {
+            sound.playCrystalChime();
+            setCelebration('100');
+          }, 350);
+        }
       }
     },
-    [history, settings.dailyGoal, saveHistory]
+    [history, settings.dailyGoal, saveHistory, selectedDate]
   );
 
   // Undo last logged portion
@@ -303,8 +322,17 @@ export const useWaterStore = () => {
     setLastAddedLog(null);
     sound.playBubble(0.7);
 
-    const nowKey = getTodayDateString();
-    const existing = history[nowKey];
+    // Find which day this log belongs to by searching history
+    let targetKey: string | null = null;
+    for (const [dateKey, dayRecord] of Object.entries(history)) {
+      if (dayRecord.logs.some((l) => l.id === logToRemove.id)) {
+        targetKey = dateKey;
+        break;
+      }
+    }
+    if (!targetKey) return;
+
+    const existing = history[targetKey];
     if (!existing) return;
 
     const updatedLogs = existing.logs.filter((l) => l.id !== logToRemove.id);
@@ -318,7 +346,7 @@ export const useWaterStore = () => {
 
     const updatedHistory = {
       ...history,
-      [nowKey]: updatedDay,
+      [targetKey]: updatedDay,
     };
 
     saveHistory(updatedHistory);
@@ -331,12 +359,12 @@ export const useWaterStore = () => {
       .then(() => {});
   }, [lastAddedLog, history, saveHistory]);
 
-  // Delete specific log
+  // Delete specific log from the currently selected day
   const deleteLog = useCallback(
     (logId: string) => {
-      const nowKey = getTodayDateString();
+      const targetDate = selectedDate;
       sound.playBubble(0.65);
-      const existing = history[nowKey];
+      const existing = history[targetDate];
       if (!existing) return;
 
       const logItem = existing.logs.find((l) => l.id === logId);
@@ -353,7 +381,7 @@ export const useWaterStore = () => {
 
       const updatedHistory = {
         ...history,
-        [nowKey]: updatedDay,
+        [targetDate]: updatedDay,
       };
 
       saveHistory(updatedHistory);
@@ -365,7 +393,7 @@ export const useWaterStore = () => {
         .eq('id', logId)
         .then(() => {});
     },
-    [history, saveHistory]
+    [history, saveHistory, selectedDate]
   );
 
   // Update settings with Supabase sync
@@ -427,11 +455,14 @@ export const useWaterStore = () => {
 
   return {
     settings,
-    todayRecord: currentDayRecord,
+    selectedDate,
+    isViewingToday,
+    selectedDayRecord,
     lastAddedLog,
     celebration,
     isCloudConnected,
     setCelebration,
+    selectDate,
     addWater,
     undoLast,
     deleteLog,

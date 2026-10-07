@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, History, Volume2, VolumeX, Sparkles, Heart } from 'lucide-react';
+import { Settings, History, Volume2, VolumeX, Sparkles, Heart, ChevronLeft } from 'lucide-react';
 import { useWaterStore } from './hooks/useWaterStore';
 import { LiquidVessel } from './components/LiquidVessel';
 import { QuickPresets } from './components/QuickPresets';
@@ -14,10 +14,13 @@ import { WATER_THEMES } from './utils/themes';
 export default function App() {
   const {
     settings,
-    todayRecord,
+    selectedDate,
+    isViewingToday,
+    selectedDayRecord,
     lastAddedLog,
     celebration,
     setCelebration,
+    selectDate,
     addWater,
     undoLast,
     deleteLog,
@@ -44,15 +47,19 @@ export default function App() {
     }, 1200);
   };
 
-  // Ukrainian formatted date
-  const todayFormatted = new Intl.DateTimeFormat('uk-UA', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  }).format(new Date());
+  // Format date for selected day
+  const getFormattedDate = (dateKey: string) => {
+    const [year, month, day] = dateKey.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    const formatted = new Intl.DateTimeFormat('uk-UA', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    }).format(date);
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  };
 
-  const capitalizedDate =
-    todayFormatted.charAt(0).toUpperCase() + todayFormatted.slice(1);
+  const displayDate = getFormattedDate(selectedDate);
 
   const weekHistory = getWeekHistory();
 
@@ -75,14 +82,26 @@ export default function App() {
       {/* Top Header Bar with Safe-Area clearance */}
       <header className="w-full flex items-center justify-between pb-1 px-1 z-30 select-none flex-shrink-0">
         {/* Date & Personalized Greeting */}
-        <div className="flex flex-col text-left">
-          <span className="text-[11px] font-semibold text-slate-400 tracking-wide">
-            {capitalizedDate}
+        <div className="flex flex-col text-left min-w-0">
+          <span className="text-[11px] font-semibold text-slate-400 tracking-wide truncate">
+            {displayDate}
           </span>
-          <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-white flex items-center gap-1.5 mt-0.5 font-sans">
-            <span>Привіт, {settings.userName}</span>
-            <Sparkles size={16} className="text-amber-300 animate-pulse flex-shrink-0" />
-          </h1>
+          {isViewingToday ? (
+            <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-white flex items-center gap-1.5 mt-0.5 font-sans">
+              <span>Привіт, {settings.userName}</span>
+              <Sparkles size={16} className="text-amber-300 animate-pulse flex-shrink-0" />
+            </h1>
+          ) : (
+            <motion.button
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              onClick={() => selectDate(new Date().toISOString().slice(0, 10))}
+              className="flex items-center gap-1 mt-0.5 text-sm font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
+            >
+              <ChevronLeft size={16} className="flex-shrink-0" />
+              <span>Повернутися до сьогодні</span>
+            </motion.button>
+          )}
         </div>
 
         {/* Action Buttons - large touch targets */}
@@ -105,7 +124,7 @@ export default function App() {
           {/* History Button */}
           <button
             onClick={() => setShowHistory(true)}
-            title="Історія за сьогодні"
+            title="Історія"
             className="w-10 h-10 rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.2] border border-white/15 backdrop-blur-xl flex items-center justify-center text-slate-200 transition-all shadow-md active:scale-92"
           >
             <History size={17} />
@@ -125,7 +144,7 @@ export default function App() {
       {/* Center Vessel (Living Liquid & Floating Companion) */}
       <main className="flex-1 flex flex-col items-center justify-center py-1 min-h-0 overflow-hidden">
         <LiquidVessel
-          total={todayRecord.total}
+          total={selectedDayRecord.total}
           goal={settings.dailyGoal}
           theme={activeTheme}
           onTriggerEasterEgg={() => setShowEasterEgg(true)}
@@ -141,7 +160,12 @@ export default function App() {
         />
 
         {/* 7-Day History Strip */}
-        <WeekStrip days={weekHistory} theme={activeTheme} />
+        <WeekStrip
+          days={weekHistory}
+          theme={activeTheme}
+          selectedDateKey={selectedDate}
+          onSelectDate={selectDate}
+        />
       </main>
 
       {/* Subtle Bottom Romantic Footer Hint */}
@@ -163,9 +187,11 @@ export default function App() {
           <HistoryModal
             isOpen={showHistory}
             onClose={() => setShowHistory(false)}
-            logs={todayRecord.logs}
+            logs={selectedDayRecord.logs}
             onDeleteLog={deleteLog}
-            total={todayRecord.total}
+            total={selectedDayRecord.total}
+            dateLabel={displayDate}
+            isToday={isViewingToday}
           />
         )}
 
