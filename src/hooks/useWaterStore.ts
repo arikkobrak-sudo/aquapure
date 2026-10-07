@@ -56,7 +56,6 @@ export const useWaterStore = () => {
     }
   });
 
-  const [currentDateKey, setCurrentDateKey] = useState<string>(getTodayDateString);
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString);
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(true);
 
@@ -69,18 +68,17 @@ export const useWaterStore = () => {
 
   // Keep date synced when phone wakes up or passes midnight
   useEffect(() => {
+    let lastKnownDate = getTodayDateString();
+
     const checkDate = () => {
       const nowKey = getTodayDateString();
-      setCurrentDateKey((prev) => {
-        if (prev !== nowKey) {
-          // Midnight rollover: if user was viewing "today", move them to the new today
-          setSelectedDate((prevSelected) =>
-            prevSelected === prev ? nowKey : prevSelected
-          );
-          return nowKey;
-        }
-        return prev;
-      });
+      if (lastKnownDate !== nowKey) {
+        // Midnight rollover: if user was viewing previous "today", move them to the new today
+        setSelectedDate((prevSelected) =>
+          prevSelected === lastKnownDate ? nowKey : prevSelected
+        );
+        lastKnownDate = nowKey;
+      }
     };
 
     const handleVisibility = () => {
