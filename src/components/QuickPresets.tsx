@@ -25,14 +25,22 @@ export const QuickPresets: React.FC<QuickPresetsProps> = ({
   theme,
 }) => {
   const [showCustomModal, setShowCustomModal] = useState<boolean>(false);
-  const [customAmount, setCustomAmount] = useState<number>(200);
+  const [customAmount, setCustomAmount] = useState<string>('200');
+
+  const numericAmount = Number(customAmount);
+  const isValid = !isNaN(numericAmount) && numericAmount > 0;
 
   const handleCustomSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (customAmount > 0) {
-      onAddWater(customAmount);
+    if (isValid) {
+      onAddWater(numericAmount);
       setShowCustomModal(false);
     }
+  };
+
+  const handleOpenModal = () => {
+    setCustomAmount('200');
+    setShowCustomModal(true);
   };
 
   return (
@@ -66,7 +74,7 @@ export const QuickPresets: React.FC<QuickPresetsProps> = ({
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.96 }}
-          onClick={() => setShowCustomModal(true)}
+          onClick={handleOpenModal}
           className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-semibold text-slate-300 backdrop-blur-md transition-colors"
         >
           <Plus size={14} className="text-cyan-400" />
@@ -123,12 +131,14 @@ export const QuickPresets: React.FC<QuickPresetsProps> = ({
                 <div className="relative flex items-center justify-center">
                   <input
                     type="number"
-                    min="10"
-                    max="2000"
-                    step="10"
+                    inputMode="numeric"
+                    min="1"
+                    max="3000"
+                    placeholder="0"
                     value={customAmount}
-                    onChange={(e) => setCustomAmount(Number(e.target.value))}
-                    className="w-36 py-2 px-3 text-center text-3xl font-extrabold text-white bg-white/5 border border-white/15 rounded-2xl focus:outline-none focus:border-cyan-400"
+                    onChange={(e) => setCustomAmount(e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    className="w-36 py-2 px-3 text-center text-3xl font-extrabold text-white bg-white/5 border border-white/15 rounded-2xl focus:outline-none focus:border-cyan-400 placeholder:text-slate-600"
                     autoFocus
                   />
                   <span className="ml-2 text-sm text-slate-400 font-semibold">
@@ -142,8 +152,8 @@ export const QuickPresets: React.FC<QuickPresetsProps> = ({
                   min="50"
                   max="1000"
                   step="25"
-                  value={customAmount}
-                  onChange={(e) => setCustomAmount(Number(e.target.value))}
+                  value={isValid ? Math.min(1000, Math.max(50, numericAmount)) : 200}
+                  onChange={(e) => setCustomAmount(e.target.value)}
                   className="w-full accent-cyan-400 cursor-pointer"
                 />
 
@@ -157,7 +167,10 @@ export const QuickPresets: React.FC<QuickPresetsProps> = ({
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-2.5 rounded-xl font-semibold text-xs text-slate-950 flex items-center justify-center gap-1.5 shadow-lg"
+                    disabled={!isValid}
+                    className={`flex-1 py-2.5 rounded-xl font-semibold text-xs text-slate-950 flex items-center justify-center gap-1.5 shadow-lg transition-all ${
+                      isValid ? 'opacity-100' : 'opacity-40 cursor-not-allowed'
+                    }`}
                     style={{ backgroundColor: theme.primary }}
                   >
                     <Check size={14} />
