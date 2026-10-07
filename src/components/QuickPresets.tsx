@@ -102,48 +102,83 @@ export const QuickPresets: React.FC<QuickPresetsProps> = ({
       {/* Custom Amount Modal */}
       <AnimatePresence>
         {showCustomModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+          <div
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setShowCustomModal(false);
+            }}
+            className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 pt-[calc(env(safe-area-inset-top,0px)+1.5rem)] sm:pt-4 bg-black/70 backdrop-blur-md overflow-y-auto"
+          >
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 15 }}
-              className="w-full max-w-xs p-5 rounded-3xl glass-panel text-center relative"
+              className="w-full max-w-xs p-4 sm:p-5 rounded-3xl glass-panel text-center relative shadow-2xl"
             >
               <button
+                type="button"
                 onClick={() => setShowCustomModal(false)}
-                className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-white/10"
+                className="absolute top-3.5 right-3.5 p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
               >
                 <X size={18} />
               </button>
 
-              <div className="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center bg-cyan-500/10 text-cyan-400 mb-3 border border-cyan-500/20">
-                <Droplets size={24} />
+              <div className="w-10 h-10 rounded-2xl mx-auto flex items-center justify-center bg-cyan-500/10 text-cyan-400 mb-2 border border-cyan-500/20">
+                <Droplets size={20} />
               </div>
 
-              <h3 className="text-base font-bold text-white mb-1">
+              <h3 className="text-base font-bold text-white mb-0.5">
                 Додати свій об'єм
               </h3>
-              <p className="text-xs text-slate-400 mb-4">
+              <p className="text-xs text-slate-400 mb-3">
                 Скільки мілілітрів водички випито?
               </p>
 
-              <form onSubmit={handleCustomSubmit} className="space-y-4">
+              <form onSubmit={handleCustomSubmit} className="space-y-3">
                 <div className="relative flex items-center justify-center">
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    min="1"
-                    max="3000"
-                    placeholder="0"
-                    value={customAmount}
-                    onChange={(e) => setCustomAmount(e.target.value)}
-                    onFocus={(e) => e.target.select()}
-                    className="w-36 py-2 px-3 text-center text-3xl font-extrabold text-white bg-white/5 border border-white/15 rounded-2xl focus:outline-none focus:border-cyan-400 placeholder:text-slate-600"
-                    autoFocus
-                  />
+                  <div className="relative inline-flex items-center">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min="1"
+                      max="3000"
+                      placeholder="0"
+                      value={customAmount}
+                      onChange={(e) => setCustomAmount(e.target.value)}
+                      className="w-36 py-2 px-3 text-center text-3xl font-extrabold text-white bg-white/5 border border-white/15 rounded-2xl focus:outline-none focus:border-cyan-400 placeholder:text-slate-600"
+                      autoFocus
+                    />
+                    {customAmount && (
+                      <button
+                        type="button"
+                        onClick={() => setCustomAmount('')}
+                        className="absolute right-2.5 p-1 rounded-full text-slate-400 hover:text-white bg-white/10 hover:bg-white/20 transition-colors"
+                        title="Очистити"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
                   <span className="ml-2 text-sm text-slate-400 font-semibold">
                     мл
                   </span>
+                </div>
+
+                {/* Quick adjustment chips */}
+                <div className="flex justify-center gap-1.5">
+                  {[150, 250, 350, 500].map((quick) => (
+                    <button
+                      key={quick}
+                      type="button"
+                      onClick={() => setCustomAmount(String(quick))}
+                      className={`px-2 py-1 rounded-lg border text-[11px] font-semibold transition-all ${
+                        customAmount === String(quick)
+                          ? 'bg-cyan-500/20 border-cyan-400/50 text-cyan-300'
+                          : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300'
+                      }`}
+                    >
+                      {quick}
+                    </button>
+                  ))}
                 </div>
 
                 {/* Slider */}
@@ -157,11 +192,11 @@ export const QuickPresets: React.FC<QuickPresetsProps> = ({
                   className="w-full accent-cyan-400 cursor-pointer"
                 />
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 pt-1">
                   <button
                     type="button"
                     onClick={() => setShowCustomModal(false)}
-                    className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-300"
+                    className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-300 transition-colors"
                   >
                     Назад
                   </button>
