@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Volume2, VolumeX, Sparkles, Heart, Target, User } from 'lucide-react';
-import type { UserSettings } from '../types';
+import type { UserSettings, ProfileId } from '../types';
 
 import { WATER_THEMES } from '../utils/themes';
 
@@ -10,6 +10,7 @@ interface SettingsModalProps {
   onClose: () => void;
   settings: UserSettings;
   onUpdateSettings: (newSettings: Partial<UserSettings>) => void;
+  profile?: ProfileId;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -17,6 +18,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   settings,
   onUpdateSettings,
+  profile = 'her',
 }) => {
   const [userName, setUserName] = useState(settings.userName);
   const [dailyGoal, setDailyGoal] = useState(settings.dailyGoal);
@@ -27,10 +29,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   if (!isOpen) return null;
 
+  const defaultName = profile === 'him' ? 'Котя' : 'Сонечко';
+
   const handleSave = () => {
     onUpdateSettings({
-      userName: userName.trim() || 'Сонечко',
-      dailyGoal: Number(dailyGoal) || 2000,
+      userName: userName.trim() || defaultName,
+      dailyGoal: Number(dailyGoal) || (profile === 'him' ? 2800 : 2000),
       soundEnabled,
       themeId,
       customLoveNote: customLoveNote.trim(),
@@ -81,7 +85,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               type="text"
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
-              placeholder="Наприклад: Сонечко чи Оля"
+              placeholder={
+                profile === 'him'
+                  ? 'Наприклад: Котя чи Артем'
+                  : 'Наприклад: Сонечко чи Оля'
+              }
               className="w-full py-2.5 px-3 rounded-xl bg-white/5 border border-white/15 text-sm font-medium text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
             />
           </div>
@@ -100,17 +108,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
             <input
               type="range"
-              min="1200"
-              max="3500"
+              min="1000"
+              max="4000"
               step="100"
               value={dailyGoal}
               onChange={(e) => setDailyGoal(Number(e.target.value))}
               className="w-full accent-cyan-400 cursor-pointer"
             />
             <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-              <span>1200 мл</span>
-              <span>2000 мл</span>
-              <span>3500 мл</span>
+              <span>1000 мл</span>
+              <span>2500 мл</span>
+              <span>4000 мл</span>
             </div>
           </div>
 
@@ -172,37 +180,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </button>
           </div>
 
-          {/* Secret Love Note Section */}
-          <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20">
-            <div
-              onClick={() => setShowLoveNoteEditor(!showLoveNoteEditor)}
-              className="flex items-center justify-between cursor-pointer"
-            >
-              <div className="flex items-center gap-2">
-                <Heart size={15} className="text-rose-400" />
-                <span className="text-xs font-semibold text-rose-200">
-                  Твоя секретна записка ❤️
+          {/* Secret Love Note Section (only on her profile) */}
+          {profile !== 'him' && (
+            <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20">
+              <div
+                onClick={() => setShowLoveNoteEditor(!showLoveNoteEditor)}
+                className="flex items-center justify-between cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Heart size={15} className="text-rose-400" />
+                  <span className="text-xs font-semibold text-rose-200">
+                    Твоя секретна записка ❤️
+                  </span>
+                </div>
+                <span className="text-[10px] text-rose-300 font-medium underline">
+                  {showLoveNoteEditor ? 'Згорнути' : 'Редагувати'}
                 </span>
               </div>
-              <span className="text-[10px] text-rose-300 font-medium underline">
-                {showLoveNoteEditor ? 'Згорнути' : 'Редагувати'}
-              </span>
-            </div>
 
-            {showLoveNoteEditor && (
-              <div className="mt-2.5 space-y-1.5">
-                <p className="text-[10px] text-rose-300/80 leading-relaxed">
-                  Ця записка з'явиться, коли вона затисне пальчиком склянку на 1.5 секунди:
-                </p>
-                <textarea
-                  rows={3}
-                  value={customLoveNote}
-                  onChange={(e) => setCustomLoveNote(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-slate-900/60 border border-rose-500/30 text-xs text-rose-100 placeholder-rose-300/40 focus:outline-none focus:border-rose-400"
-                />
-              </div>
-            )}
-          </div>
+              {showLoveNoteEditor && (
+                <div className="mt-2.5 space-y-1.5">
+                  <p className="text-[10px] text-rose-300/80 leading-relaxed">
+                    Ця записка з'явиться, коли вона затисне пальчиком склянку на 1.5 секунди:
+                  </p>
+                  <textarea
+                    rows={3}
+                    value={customLoveNote}
+                    onChange={(e) => setCustomLoveNote(e.target.value)}
+                    className="w-full p-2.5 rounded-xl bg-slate-900/60 border border-rose-500/30 text-xs text-rose-100 placeholder-rose-300/40 focus:outline-none focus:border-rose-400"
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer */}

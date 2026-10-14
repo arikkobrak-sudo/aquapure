@@ -1,23 +1,48 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { WaterLog, DayRecord, UserSettings } from '../types';
+import type { WaterLog, DayRecord, UserSettings, ProfileId } from '../types';
 import { sound } from '../utils/sound';
 import { supabase } from '../utils/supabase';
 
-const STORAGE_KEYS = {
-  SETTINGS: 'aquapure_settings_v1',
-  HISTORY: 'aquapure_history_v1',
+interface ProfileConfig {
+  settingsRowId: string;
+  storage: { SETTINGS: string; HISTORY: string };
+  defaults: UserSettings;
+}
+
+// 'her' keeps the original keys / row id so existing data stays untouched
+const PROFILE_CONFIG: Record<ProfileId, ProfileConfig> = {
+  her: {
+    settingsRowId: 'main',
+    storage: {
+      SETTINGS: 'aquapure_settings_v1',
+      HISTORY: 'aquapure_history_v1',
+    },
+    defaults: {
+      userName: 'Сонечко',
+      dailyGoal: 2000,
+      soundEnabled: true,
+      themeId: 'aqua',
+      customLoveNote:
+        'Ти робиш цей світ красивішим і теплішим щодня. Не забувай пити водичку і берегти себе, моє сонечко! Люблю тебе до місяця і назад ❤️',
+    },
+  },
+  him: {
+    settingsRowId: 'him',
+    storage: {
+      SETTINGS: 'aquapure_him_settings_v1',
+      HISTORY: 'aquapure_him_history_v1',
+    },
+    defaults: {
+      userName: 'Котя',
+      dailyGoal: 2800,
+      soundEnabled: true,
+      themeId: 'indigo',
+      customLoveNote: '',
+    },
+  },
 };
 
-const DEFAULT_SETTINGS: UserSettings = {
-  userName: 'Сонечко',
-  dailyGoal: 2000,
-  soundEnabled: true,
-  themeId: 'aqua',
-  customLoveNote:
-    'Ти робиш цей світ красивішим і теплішим щодня. Не забувай пити водичку і берегти себе, моє сонечко! Люблю тебе до місяця і назад ❤️',
-};
-
-const getTodayDateString = (): string => {
+export const getTodayDateString = (): string => {
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -25,7 +50,10 @@ const getTodayDateString = (): string => {
   return `${year}-${month}-${day}`;
 };
 
-export const useWaterStore = () => {
+export const useWaterStore = (profile: ProfileId) => {
+  const { settingsRowId, storage: STORAGE_KEYS, defaults: DEFAULT_SETTINGS } =
+    PROFILE_CONFIG[profile];
+
   // Load settings
   const [settings, setSettings] = useState<UserSettings>(() => {
     try {
@@ -36,15 +64,14 @@ export const useWaterStore = () => {
     }
   });
 
-  // Sync sound setting
+  // Persist settings locally (sound flag is applied by App for the active profile)
   useEffect(() => {
-    sound.enabled = settings.soundEnabled;
     try {
       localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
     } catch {
       // ignore
     }
-  }, [settings]);
+  }, [settings, STORAGE_KEYS.SETTINGS]);
 
   // Load history
   const [history, setHistory] = useState<Record<string, DayRecord>>(() => {
@@ -64,6 +91,11 @@ export const useWaterStore = () => {
   // Navigate to a specific day
   const selectDate = useCallback((dateKey: string) => {
     setSelectedDate(dateKey);
+  }, []);
+
+  // Jump back to today (local date, not UTC)
+  const goToToday = useCallback(() => {
+    setSelectedDate(getTodayDateString());
   }, []);
 
   // Keep date synced when phone wakes up or passes midnight
@@ -112,7 +144,7 @@ export const useWaterStore = () => {
       const { data: remoteSettings, error: setErr } = await supabase
         .from('water_tracker_settings')
         .select('*')
-        .eq('id', 'main')
+        .eq('id', settingsRowId)
         .maybeSingle();
 
       if (!setErr && remoteSettings) {
@@ -132,10 +164,11 @@ export const useWaterStore = () => {
         });
       }
 
-      // 2. Fetch remote logs
+      // 2. Fetch remote logs for this profile only
       const { data: remoteLogs, error: logErr } = await supabase
         .from('water_tracker_logs')
         .select('*')
+        .eq('profile', profile)
         .order('timestamp', { ascending: false });
 
       if (!logErr && remoteLogs) {
@@ -176,14 +209,14 @@ export const useWaterStore = () => {
     } catch {
       setIsCloudConnected(false);
     }
-  }, [saveHistory, settings.dailyGoal]);
+  }, [saveHistory, settings.dailyGoal, settingsRowId, profile]);
 
   // Realtime Supabase Subscription
   useEffect(() => {
     fetchCloudData();
 
     const channel = supabase
-      .channel('shared_water_tracker')
+      .channel(`shared_water_tracker_${profile}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'water_tracker_logs' },
@@ -193,7 +226,12 @@ export const useWaterStore = () => {
       )
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'water_tracker_settings' },
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'water_tracker_settings',
+          filter: `id=eq.${settingsRowId}`,
+        },
         (payload) => {
           const newRow = payload.new as {
             user_name?: string;
@@ -293,6 +331,7 @@ export const useWaterStore = () => {
           amount: newLog.amount,
           timestamp: newLog.timestamp,
           date: targetDate,
+          profile,
         })
         .then(({ error }) => {
           if (error) console.warn('Supabase insert error:', error);
@@ -310,7 +349,7 @@ export const useWaterStore = () => {
         }
       }
     },
-    [history, settings.dailyGoal, saveHistory, selectedDate]
+    [history, settings.dailyGoal, saveHistory, selectedDate, profile]
   );
 
   // Undo last logged portion
@@ -406,7 +445,7 @@ export const useWaterStore = () => {
       supabase
         .from('water_tracker_settings')
         .upsert({
-          id: 'main',
+          id: settingsRowId,
           user_name: updated.userName,
           daily_goal: updated.dailyGoal,
           theme_id: updated.themeId,
@@ -417,7 +456,7 @@ export const useWaterStore = () => {
 
       return updated;
     });
-  }, []);
+  }, [settingsRowId, STORAGE_KEYS.SETTINGS]);
 
   // Last 7 days history
   const getWeekHistory = useCallback(() => {
@@ -461,6 +500,7 @@ export const useWaterStore = () => {
     isCloudConnected,
     setCelebration,
     selectDate,
+    goToToday,
     addWater,
     undoLast,
     deleteLog,

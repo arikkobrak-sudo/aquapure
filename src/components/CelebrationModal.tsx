@@ -1,27 +1,35 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Sparkles, Heart, CheckCircle2 } from 'lucide-react';
-import { COMPLIMENTS, getRandomItem } from '../utils/compliments';
+import { Sparkles, Heart, CheckCircle2, Zap } from 'lucide-react';
+import { COMPLIMENTS, COMPLIMENTS_HIM, getRandomItem } from '../utils/compliments';
+import type { ProfileId } from '../types';
 
 interface CelebrationModalProps {
   type: '50' | '100' | null;
   onClose: () => void;
   userName: string;
+  variant?: ProfileId;
 }
 
 export const CelebrationModal: React.FC<CelebrationModalProps> = ({
   type,
   onClose,
   userName,
+  variant = 'her',
 }) => {
+  const isHim = variant === 'him';
+  const phrases = isHim ? COMPLIMENTS_HIM : COMPLIMENTS;
+
   useEffect(() => {
     if (type === '100') {
       // Fire festive delicate water/glass confetti
       const count = 180;
       const defaults = {
         origin: { y: 0.7 },
-        colors: ['#38bdf8', '#67e8f9', '#f43f5e', '#fbbf24', '#ffffff'],
+        colors: isHim
+          ? ['#6366f1', '#818cf8', '#38bdf8', '#fbbf24', '#ffffff']
+          : ['#38bdf8', '#67e8f9', '#f43f5e', '#fbbf24', '#ffffff'],
       };
 
       confetti({
@@ -42,14 +50,19 @@ export const CelebrationModal: React.FC<CelebrationModalProps> = ({
         scalar: 0.8,
       });
     }
-  }, [type]);
-
-  if (!type) return null;
+  }, [type, isHim]);
 
   const isFull = type === '100';
-  const quote = isFull
-    ? getRandomItem(COMPLIMENTS.completed100)
-    : getRandomItem(COMPLIMENTS.progress50);
+  // Pick the phrase once per celebration (not on every re-render)
+  const quote = useMemo(
+    () =>
+      isFull
+        ? getRandomItem(phrases.completed100)
+        : getRandomItem(phrases.progress50),
+    [isFull, phrases]
+  );
+
+  if (!type) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
@@ -72,10 +85,12 @@ export const CelebrationModal: React.FC<CelebrationModalProps> = ({
           className={`w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-xl border ${
             isFull
               ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+              : isHim
+              ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
               : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
           }`}
         >
-          {isFull ? <Sparkles size={32} /> : <Heart size={30} />}
+          {isFull ? <Sparkles size={32} /> : isHim ? <Zap size={30} /> : <Heart size={30} />}
         </div>
 
         {/* Badge */}
@@ -85,7 +100,11 @@ export const CelebrationModal: React.FC<CelebrationModalProps> = ({
 
         {/* Title */}
         <h3 className="text-xl font-extrabold text-white mb-2">
-          {userName}, ти чарівна!
+          {isHim
+            ? isFull
+              ? `${userName}, ціль взято! 🔥`
+              : `${userName}, гарний темп! 💪`
+            : `${userName}, ти чарівна!`}
         </h3>
 
         {/* Compliment */}

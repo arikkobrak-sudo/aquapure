@@ -8,8 +8,9 @@ interface LiquidVesselProps {
   total: number;
   goal: number;
   theme: WaterTheme;
-  onTriggerEasterEgg: () => void;
+  onTriggerEasterEgg?: () => void;
   isExcited: boolean;
+  companionQuotes?: string[];
 }
 
 interface Bubble {
@@ -28,6 +29,7 @@ export const LiquidVessel: React.FC<LiquidVesselProps> = ({
   theme,
   onTriggerEasterEgg,
   isExcited,
+  companionQuotes,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -44,8 +46,11 @@ export const LiquidVessel: React.FC<LiquidVesselProps> = ({
   const [isPressing, setIsPressing] = useState<boolean>(false);
   const [pressProgress, setPressProgress] = useState<number>(0);
   const pressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pressStartRef = useRef<{ x: number; y: number } | null>(null);
 
-  const startLongPress = useCallback(() => {
+  const startLongPress = useCallback((x: number, y: number) => {
+    if (!onTriggerEasterEgg) return;
+    pressStartRef.current = { x, y };
     setIsPressing(true);
     setPressProgress(0);
 
@@ -64,12 +69,14 @@ export const LiquidVessel: React.FC<LiquidVesselProps> = ({
     longPressTimerRef.current = setTimeout(() => {
       setIsPressing(false);
       setPressProgress(0);
+      pressStartRef.current = null;
       sound.playHeartbeat();
       onTriggerEasterEgg();
     }, duration);
   }, [onTriggerEasterEgg]);
 
   const cancelLongPress = useCallback(() => {
+    pressStartRef.current = null;
     setIsPressing(false);
     setPressProgress(0);
     if (longPressTimerRef.current) {
@@ -81,6 +88,16 @@ export const LiquidVessel: React.FC<LiquidVesselProps> = ({
       pressIntervalRef.current = null;
     }
   }, []);
+
+  // Cancel the long press as soon as the finger starts moving (it's a swipe, not a hold)
+  const handlePressMove = useCallback(
+    (x: number, y: number) => {
+      const start = pressStartRef.current;
+      if (!start) return;
+      if (Math.hypot(x - start.x, y - start.y) > 10) cancelLongPress();
+    },
+    [cancelLongPress]
+  );
 
   // Canvas wave animation
   useEffect(() => {
@@ -267,10 +284,18 @@ export const LiquidVessel: React.FC<LiquidVesselProps> = ({
       {/* Glass Vessel Sphere Container */}
       <motion.div
         ref={containerRef}
-        onMouseDown={startLongPress}
+        onMouseDown={(e) => startLongPress(e.clientX, e.clientY)}
+        onMouseMove={(e) => handlePressMove(e.clientX, e.clientY)}
         onMouseUp={cancelLongPress}
         onMouseLeave={cancelLongPress}
-        onTouchStart={startLongPress}
+        onTouchStart={(e) => {
+          const t = e.touches[0];
+          if (t) startLongPress(t.clientX, t.clientY);
+        }}
+        onTouchMove={(e) => {
+          const t = e.touches[0];
+          if (t) handlePressMove(t.clientX, t.clientY);
+        }}
         onTouchEnd={cancelLongPress}
         onTouchCancel={cancelLongPress}
         animate={isPressing ? { scale: 0.96 } : { scale: 1 }}
@@ -294,6 +319,7 @@ export const LiquidVessel: React.FC<LiquidVesselProps> = ({
             isExcited={isExcited}
             isComplete={percent >= 100}
             waterPercent={percent}
+            quotes={companionQuotes}
           />
         </div>
 

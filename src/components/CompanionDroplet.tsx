@@ -7,11 +7,13 @@ interface CompanionDropletProps {
   isExcited: boolean;
   isComplete: boolean;
   waterPercent: number;
+  quotes?: string[];
 }
 
 export const CompanionDroplet: React.FC<CompanionDropletProps> = ({
   isExcited,
   isComplete,
+  quotes = COMPLIMENTS.dropletQuotes,
 }) => {
   const [isBlinking, setIsBlinking] = useState(false);
   const [speechBubble, setSpeechBubble] = useState<string | null>(null);
@@ -29,7 +31,7 @@ export const CompanionDroplet: React.FC<CompanionDropletProps> = ({
   const handleDropletClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     sound.playBubble(1.2);
-    const quote = getRandomItem(COMPLIMENTS.dropletQuotes);
+    const quote = getRandomItem(quotes);
     setSpeechBubble(quote);
     setTimeout(() => {
       setSpeechBubble(null);

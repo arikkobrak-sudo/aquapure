@@ -46,4 +46,15 @@ export const WATER_THEMES: Record<string, WaterTheme> = {
     waveColor2: 'rgba(124, 58, 237, 0.85)',
     accentBg: 'from-purple-500/10 to-indigo-600/10',
   },
+  indigo: {
+    id: 'indigo',
+    name: 'Deep Indigo',
+    subname: 'Глибокий океан',
+    primary: '#6366f1',
+    secondary: '#3730a3',
+    surfaceGlow: 'rgba(99, 102, 241, 0.4)',
+    waveColor1: 'rgba(99, 102, 241, 0.7)',
+    waveColor2: 'rgba(55, 48, 163, 0.9)',
+    accentBg: 'from-indigo-500/10 to-blue-700/10',
+  },
 };
