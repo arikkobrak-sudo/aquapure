@@ -1,11 +1,14 @@
 // AquaPure Offline PWA Service Worker
-const CACHE_NAME = 'aquapure-v2';
+const CACHE_NAME = 'aquapure-v3';
 
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/favicon.svg',
+  '/apple-touch-icon.png',
+  '/icon-192.png',
+  '/icon-512.png',
 ];
 
 self.addEventListener('install', (event) => {

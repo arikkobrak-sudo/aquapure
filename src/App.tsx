@@ -29,6 +29,19 @@ export default function App() {
     sound.enabled = activeStore.settings.soundEnabled;
   }, [activeStore.settings.soundEnabled]);
 
+  // Ensure standalone mode class is applied immediately in PWA
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isStandalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.matchMedia('(display-mode: fullscreen)').matches ||
+        (window.navigator as any).standalone === true;
+      if (isStandalone) {
+        document.documentElement.classList.add('is-standalone');
+      }
+    }
+  }, []);
+
   // Modals state
   const [showHistory, setShowHistory] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -77,10 +90,10 @@ export default function App() {
 
   return (
     <div
-      className="relative h-[100dvh] w-full max-w-md mx-auto flex flex-col justify-between px-4 overflow-hidden select-none"
+      className="relative h-full h-[100dvh] app-root-container w-full max-w-md mx-auto flex flex-col justify-between px-4 overflow-hidden select-none"
       style={{
         paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)',
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 10px)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
       }}
     >
       {/* Dynamic Background Atmospheric Lighting */}
