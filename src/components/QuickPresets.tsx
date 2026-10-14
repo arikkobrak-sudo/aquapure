@@ -53,9 +53,9 @@ export const QuickPresets: React.FC<QuickPresetsProps> = ({
             whileHover={{ scale: 1.04, y: -2 }}
             whileTap={{ scale: 0.94 }}
             onClick={() => onAddWater(preset.amount)}
-            className="flex flex-col items-center justify-center py-2.5 px-1.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.1] backdrop-blur-md transition-colors shadow-lg shadow-black/20 group"
+            className="flex flex-col items-center justify-center py-2 px-1 rounded-2xl bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.1] backdrop-blur-md transition-colors shadow-lg shadow-black/20 group"
           >
-            <span className="text-xl mb-1 group-hover:scale-110 transition-transform">
+            <span className="text-xl mb-0.5 group-hover:scale-110 transition-transform">
               {preset.icon}
             </span>
             <span className="text-xs font-bold text-slate-100 font-sans">
@@ -69,7 +69,7 @@ export const QuickPresets: React.FC<QuickPresetsProps> = ({
       </div>
 
       {/* Custom & Quick Action Row */}
-      <div className="flex items-center gap-2 mt-3 w-full">
+      <div className="flex items-center gap-2 mt-2 w-full">
         {/* Custom Amount Button */}
         <motion.button
           whileHover={{ scale: 1.02 }}

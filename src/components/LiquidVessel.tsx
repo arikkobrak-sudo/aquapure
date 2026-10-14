@@ -107,8 +107,8 @@ export const LiquidVessel: React.FC<LiquidVesselProps> = ({
     if (!ctx) return;
 
     let animationFrameId: number;
-    const width = 230;
-    const height = 230;
+    const width = 200;
+    const height = 200;
     const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 2, 3) : 2;
     canvas.width = width * dpr;
     canvas.height = height * dpr;
@@ -258,7 +258,7 @@ export const LiquidVessel: React.FC<LiquidVesselProps> = ({
     <div className="relative flex flex-col items-center justify-center my-auto select-none flex-shrink-0">
       {/* Outer Glow Halo based on water theme */}
       <div
-        className="absolute w-60 h-60 rounded-full transition-all duration-700 blur-3xl opacity-30 pointer-events-none"
+        className="absolute w-52 h-52 rounded-full transition-all duration-700 blur-3xl opacity-30 pointer-events-none"
         style={{
           background: `radial-gradient(circle, ${theme.primary} 0%, transparent 70%)`,
         }}
@@ -266,16 +266,16 @@ export const LiquidVessel: React.FC<LiquidVesselProps> = ({
 
       {/* Long Press Circular Progress Indicator */}
       {isPressing && (
-        <svg className="absolute w-[248px] h-[248px] -rotate-90 pointer-events-none z-20">
+        <svg className="absolute w-[216px] h-[216px] -rotate-90 pointer-events-none z-20">
           <circle
-            cx="124"
-            cy="124"
-            r="118"
+            cx="108"
+            cy="108"
+            r="103"
             fill="none"
             stroke="rgba(244, 63, 94, 0.8)"
             strokeWidth="3.5"
-            strokeDasharray={2 * Math.PI * 118}
-            strokeDashoffset={2 * Math.PI * 118 * (1 - pressProgress)}
+            strokeDasharray={2 * Math.PI * 103}
+            strokeDashoffset={2 * Math.PI * 103 * (1 - pressProgress)}
             strokeLinecap="round"
           />
         </svg>
@@ -300,7 +300,7 @@ export const LiquidVessel: React.FC<LiquidVesselProps> = ({
         onTouchCancel={cancelLongPress}
         animate={isPressing ? { scale: 0.96 } : { scale: 1 }}
         transition={{ type: 'spring', damping: 15, stiffness: 300 }}
-        className="relative w-[230px] h-[230px] rounded-full p-2 cursor-pointer backdrop-blur-xl bg-slate-900/50 border border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.6),inset_0_0_20px_rgba(255,255,255,0.12)] overflow-hidden transition-shadow"
+        className="relative w-[200px] h-[200px] rounded-full p-2 cursor-pointer backdrop-blur-xl bg-slate-900/50 border border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.6),inset_0_0_20px_rgba(255,255,255,0.12)] overflow-hidden transition-shadow"
       >
         {/* Canvas for liquid wave and bubbles */}
         <canvas
@@ -312,7 +312,7 @@ export const LiquidVessel: React.FC<LiquidVesselProps> = ({
         <div
           className="absolute left-1/2 -translate-x-1/2 pointer-events-auto transition-all duration-150 ease-out z-10"
           style={{
-            top: `${Math.max(30, Math.min(175, companionY - 44))}px`,
+            top: `${Math.max(20, Math.min(150, companionY - 40))}px`,
           }}
         >
           <CompanionDroplet
@@ -334,9 +334,9 @@ export const LiquidVessel: React.FC<LiquidVesselProps> = ({
       </motion.div>
 
       {/* Numerical Progress Display */}
-      <div className="mt-3 flex flex-col items-center">
+      <div className="mt-2 flex flex-col items-center">
         <div className="flex items-baseline gap-1.5">
-          <span className="text-3xl font-extrabold tracking-tight text-white drop-shadow-sm font-sans">
+          <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white drop-shadow-sm font-sans">
             {total.toLocaleString('uk-UA')}
           </span>
           <span className="text-xs font-semibold text-slate-400">

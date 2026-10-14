@@ -79,8 +79,8 @@ export default function App() {
     <div
       className="relative h-[100dvh] w-full max-w-md mx-auto flex flex-col justify-between px-4 overflow-hidden select-none"
       style={{
-        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)',
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 10px)',
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 8px)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)',
       }}
     >
       {/* Dynamic Background Atmospheric Lighting */}
@@ -184,7 +184,7 @@ export default function App() {
       </header>
 
       {/* Center Vessel with horizontal swipe gesture between profiles */}
-      <main className="flex-1 flex flex-col items-center justify-center py-1 min-h-0 overflow-hidden">
+      <main className="flex-1 flex flex-col items-center justify-between py-0.5 min-h-0 overflow-visible">
         <motion.div
           drag="x"
           dragConstraints={{ left: 0, right: 0 }}
@@ -219,7 +219,7 @@ export default function App() {
           </AnimatePresence>
 
           {/* iOS-Style Profile Pagination Indicator Dots */}
-          <div className="flex items-center justify-center gap-1.5 mt-2 mb-1">
+          <div className="flex items-center justify-center gap-1.5 mt-1 mb-0.5">
             <button
               type="button"
               onClick={() => setActiveProfile('her')}
