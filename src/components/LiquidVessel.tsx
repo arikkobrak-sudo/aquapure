@@ -255,83 +255,89 @@ export const LiquidVessel: React.FC<LiquidVesselProps> = ({
   }, [ratio, theme, isExcited]);
 
   return (
-    <div className="relative flex flex-col items-center justify-center my-auto select-none flex-shrink-0">
-      {/* Outer Glow Halo based on water theme */}
-      <div
-        className="absolute w-52 h-52 rounded-full transition-all duration-700 blur-3xl opacity-30 pointer-events-none"
-        style={{
-          background: `radial-gradient(circle, ${theme.primary} 0%, transparent 70%)`,
-        }}
-      />
-
-      {/* Long Press Circular Progress Indicator */}
-      {isPressing && (
-        <svg className="absolute w-[216px] h-[216px] -rotate-90 pointer-events-none z-20">
-          <circle
-            cx="108"
-            cy="108"
-            r="103"
-            fill="none"
-            stroke="rgba(244, 63, 94, 0.8)"
-            strokeWidth="3.5"
-            strokeDasharray={2 * Math.PI * 103}
-            strokeDashoffset={2 * Math.PI * 103 * (1 - pressProgress)}
-            strokeLinecap="round"
-          />
-        </svg>
-      )}
-
-      {/* Glass Vessel Sphere Container */}
-      <motion.div
-        ref={containerRef}
-        onMouseDown={(e) => startLongPress(e.clientX, e.clientY)}
-        onMouseMove={(e) => handlePressMove(e.clientX, e.clientY)}
-        onMouseUp={cancelLongPress}
-        onMouseLeave={cancelLongPress}
-        onTouchStart={(e) => {
-          const t = e.touches[0];
-          if (t) startLongPress(t.clientX, t.clientY);
-        }}
-        onTouchMove={(e) => {
-          const t = e.touches[0];
-          if (t) handlePressMove(t.clientX, t.clientY);
-        }}
-        onTouchEnd={cancelLongPress}
-        onTouchCancel={cancelLongPress}
-        animate={isPressing ? { scale: 0.96 } : { scale: 1 }}
-        transition={{ type: 'spring', damping: 15, stiffness: 300 }}
-        className="relative w-[200px] h-[200px] rounded-full p-2 cursor-pointer backdrop-blur-xl bg-slate-900/50 border border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.6),inset_0_0_20px_rgba(255,255,255,0.12)] overflow-hidden transition-shadow"
-      >
-        {/* Canvas for liquid wave and bubbles */}
-        <canvas
-          ref={canvasRef}
-          className="w-full h-full rounded-full block pointer-events-none"
+    <div className="relative flex flex-col items-center justify-center select-none flex-shrink-0">
+      {/* Sphere Box with concentric glow and progress ring */}
+      <div className="relative w-[200px] h-[200px] flex items-center justify-center">
+        {/* Outer Glow Halo based on water theme */}
+        <div
+          className="absolute w-52 h-52 rounded-full transition-all duration-700 blur-3xl opacity-30 pointer-events-none"
+          style={{
+            background: `radial-gradient(circle, ${theme.primary} 0%, transparent 70%)`,
+          }}
         />
 
-        {/* Floating Companion on the water surface */}
-        <div
-          className="absolute left-1/2 -translate-x-1/2 pointer-events-auto transition-all duration-150 ease-out z-10"
-          style={{
-            top: `${Math.max(20, Math.min(150, companionY - 40))}px`,
+        {/* Long Press Circular Progress Indicator - Perfectly Centered on the Sphere */}
+        {isPressing && (
+          <svg
+            className="absolute -top-1.5 -left-1.5 w-[212px] h-[212px] -rotate-90 pointer-events-none z-20"
+            viewBox="0 0 212 212"
+          >
+            <circle
+              cx="106"
+              cy="106"
+              r="102"
+              fill="none"
+              stroke="rgba(244, 63, 94, 0.85)"
+              strokeWidth="3.5"
+              strokeDasharray={2 * Math.PI * 102}
+              strokeDashoffset={2 * Math.PI * 102 * (1 - pressProgress)}
+              strokeLinecap="round"
+            />
+          </svg>
+        )}
+
+        {/* Glass Vessel Sphere Container */}
+        <motion.div
+          ref={containerRef}
+          onMouseDown={(e) => startLongPress(e.clientX, e.clientY)}
+          onMouseMove={(e) => handlePressMove(e.clientX, e.clientY)}
+          onMouseUp={cancelLongPress}
+          onMouseLeave={cancelLongPress}
+          onTouchStart={(e) => {
+            const t = e.touches[0];
+            if (t) startLongPress(t.clientX, t.clientY);
           }}
+          onTouchMove={(e) => {
+            const t = e.touches[0];
+            if (t) handlePressMove(t.clientX, t.clientY);
+          }}
+          onTouchEnd={cancelLongPress}
+          onTouchCancel={cancelLongPress}
+          animate={isPressing ? { scale: 0.96 } : { scale: 1 }}
+          transition={{ type: 'spring', damping: 15, stiffness: 300 }}
+          className="w-full h-full rounded-full p-2 cursor-pointer backdrop-blur-xl bg-slate-900/50 border border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.6),inset_0_0_20px_rgba(255,255,255,0.12)] overflow-hidden transition-shadow"
         >
-          <CompanionDroplet
-            isExcited={isExcited}
-            isComplete={percent >= 100}
-            waterPercent={percent}
-            quotes={companionQuotes}
+          {/* Canvas for liquid wave and bubbles */}
+          <canvas
+            ref={canvasRef}
+            className="w-full h-full rounded-full block pointer-events-none"
           />
-        </div>
 
-        {/* Glass Specular Gloss Highlight (top left curved reflection) */}
-        <div className="absolute inset-0 rounded-full pointer-events-none bg-gradient-to-br from-white/30 via-white/5 to-transparent opacity-90" />
+          {/* Floating Companion on the water surface */}
+          <div
+            className="absolute left-1/2 -translate-x-1/2 pointer-events-auto transition-all duration-150 ease-out z-10"
+            style={{
+              top: `${Math.max(20, Math.min(150, companionY - 40))}px`,
+            }}
+          >
+            <CompanionDroplet
+              isExcited={isExcited}
+              isComplete={percent >= 100}
+              waterPercent={percent}
+              quotes={companionQuotes}
+            />
+          </div>
 
-        {/* Bottom subtle rim reflection */}
-        <div className="absolute inset-x-6 bottom-2 h-10 rounded-full pointer-events-none bg-gradient-to-t from-white/15 to-transparent blur-sm" />
+          {/* Glass Specular Gloss Highlight (top left curved reflection) */}
+          <div className="absolute inset-0 rounded-full pointer-events-none bg-gradient-to-br from-white/30 via-white/5 to-transparent opacity-90" />
 
-        {/* Inner Glass Rim Shadow */}
-        <div className="absolute inset-0 rounded-full pointer-events-none shadow-[inset_0_2px_6px_rgba(255,255,255,0.3),inset_0_-6px_12px_rgba(0,0,0,0.5)]" />
-      </motion.div>
+          {/* Bottom subtle rim reflection */}
+          <div className="absolute inset-x-6 bottom-2 h-10 rounded-full pointer-events-none bg-gradient-to-t from-white/15 to-transparent blur-sm" />
+
+          {/* Inner Glass Rim Shadow */}
+          <div className="absolute inset-0 rounded-full pointer-events-none shadow-[inset_0_2px_6px_rgba(255,255,255,0.3),inset_0_-6px_12px_rgba(0,0,0,0.5)]" />
+        </motion.div>
+      </div>
 
       {/* Numerical Progress Display */}
       <div className="mt-2 flex flex-col items-center">

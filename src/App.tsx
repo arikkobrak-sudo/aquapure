@@ -79,8 +79,8 @@ export default function App() {
     <div
       className="relative h-[100dvh] w-full max-w-md mx-auto flex flex-col justify-between px-4 overflow-hidden select-none"
       style={{
-        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 8px)',
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)',
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 10px)',
       }}
     >
       {/* Dynamic Background Atmospheric Lighting */}
